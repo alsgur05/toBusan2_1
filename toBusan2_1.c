@@ -797,7 +797,7 @@ void CZM_status() {
 		}
 		else
 		{
-			game_over_stage(); //이부분땜에 이상하게 끝남에휴
+			game_over_stage(); //이부분땜에 이상하게 끝남에휴..
 		}
 	}
 }
