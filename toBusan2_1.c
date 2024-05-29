@@ -797,7 +797,7 @@ void CZM_status() {
 		}
 		else
 		{
-			game_over_stage();
+			game_over_stage(); //이부분땜에 이상하게 끝남
 		}
 	}
 }
@@ -890,4 +890,5 @@ int main() {
 	}
 	exit(1);
 	return 0;
+	
 }
