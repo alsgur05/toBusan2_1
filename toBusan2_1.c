@@ -83,7 +83,7 @@ int zombie_cannotMove = 0;
 int ZM_cannotMove;
 int ZC_cannotMove;
 int m_pull;
-int gameOver;
+int gameOver = 0;
 
 int stage = 0;
 
@@ -210,6 +210,7 @@ void game_over() {
 		printf("YOU WIN! citizen escapes train");
 		++stage;
 		++gameOver;
+		return;
 	}
 	else if (c == z + 1)
 	{
@@ -237,11 +238,11 @@ void game_over_stage() {
 		}
 		++stage;
 		printf("SUCCESS citizen escapes next train (stage : %d)", stage);
+		++gameOver;
 	}
 	else if (c == z + 1)
 	{
 		printf("GAME OVER! citizen dead...");
-		++gameOver;
 		exit(1);
 	}
 	else if (z_atteck_m == 1)
@@ -249,7 +250,6 @@ void game_over_stage() {
 		if (m_stm == 1 || m_stm == 0)
 		{
 			printf("GAME OVER! madongseok dead...");
-			++gameOver;
 			exit(1);
 		}
 	}
@@ -524,7 +524,7 @@ void m_action() { //어그로
 			{
 				if (m_stm == STM_MAX)
 				{
-					printf("madongseok rests...\nmadongseok : %d (aggro : %d -> %d, stamina : %d)\n", m, m_aggro + 1, m_aggro, m_stm);
+					printf("madongseok rests...\nmadongseok : %d (aggro : %d, stamina : %d)\n", m, m_aggro, m_stm);
 				}
 				else
 				{
@@ -562,7 +562,7 @@ void CZM_status() {
 		printf("citizen deos nothing\n");
 	}
 	if (c == z - 1) {
-		printf("zombie attcked citizen.\n");
+		game_over();
 	}
 	else if (m == z + 1) {
 		if (m_stm == 1 || m_stm == 0)
@@ -601,8 +601,29 @@ void CZM_status() {
 		printf("zombie attcked nobody");
 	}
 	printf("\n");
-	game_over();
-	m_action();
+	if (stage == 0)
+	{
+		if (c != 1)
+		{
+			m_action();
+		}
+		else
+		{
+			game_over();
+		}
+	}
+	else
+	{
+		if (c != 1 )
+		{
+			m_action();
+		}
+		else
+		{
+
+		}
+	}
+	
 }
 
 
@@ -643,24 +664,32 @@ int main() {
 	}
 
 	// 3 - 1 스테이지
-	printf("\n===============\n  3 - 1 STAGE\n===============\n\n");
+	printf("\n==========================\n  3 - 1 STAGE ( %d  / 3 )\n==========================\n\n", stage);
 
-	reset();
-	while (stage != 3)
+	train_first(); //열차 길이, 마동석 stm, 확률 설정
+	while (stage != 4)
 	{
-		train_first(); //열차 길이, 마동석 stm, 확률 설정
+		reset();
 		train_start(); //열차 출력
-
-	}
-	while (stage != 3)
-	{
-		functionReset();
-		printf("\nturn : %d\n", turn);
-		CZ_turn(); //C_turn > Z_turn
-		CZ_move(); //train_start > C_move > Z_move	
-		m_pull = 0;
-		M_move();
-		CZM_status(); //m_action
+		gameOver = 0;
+		while (gameOver != 1)
+		{
+			functionReset();
+			printf("\nturn : %d\n", turn);
+			CZ_turn(); //C_turn > Z_turn
+			CZ_move(); //train_start > C_move > Z_move	
+			m_pull = 0;
+			M_move();
+			CZM_status(); //m_action
+			if (c == 1)
+			{
+				printf("SUCCESS! citizen escapes next train (stage : %d -> %d)\n", stage - 1, stage);
+				if (stage < 4)
+				{
+					printf("\n==========================\n  3 - 1 STAGE ( %d  / 3 )\n==========================\n\n", stage);
+				}
+			}
+		}
 	}
 	return 0;
 }
