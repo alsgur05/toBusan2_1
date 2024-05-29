@@ -33,13 +33,14 @@
 #define ACTION_PROVOKE 1
 #define ACTION_PULL 2	
 
+// 이거 나중에 정리해
 int length, p, m_stm;
-char characters[] = { 'C', 'Z', 'M' }; // 0, 1, 2
+char characters[] = { 'C', 'Z', 'M' , 'V' }; // 0, 1, 2, 3
 int sum1 = 0;
 int turn = 0;
-int c_aggro = 1, m_aggro = 1;
+int c_aggro = 1, m_aggro = 1, v_aggro = 1;
 int m_status, m_move;
-int c, z, m, v;
+int c, z, m, v, c_to_v, v_to_c;
 int status;
 int x;
 int m_action_while;
@@ -51,6 +52,8 @@ int ZC_cannotMove;
 int m_pull;
 int gameOver = 0;
 int stage = 0;
+int baram, oneTime = 0;
+
 
 //초기화, 초기 상태
 void train_first() {
@@ -75,12 +78,14 @@ void train_first() {
 	c = length - 6;
 	z = length - 3;
 	m = length - 2;
+	v = length - 5;
 }
 
-void C_turn() {
+void CV_turn() {
 	int r_move_c = rand() % 100;
 	if (r_move_c <= 100 - p) {
 		--c;
+		--v;
 		if (c_aggro == AGGRO_MAX)
 		{
 			c_aggro = c_aggro;
@@ -88,16 +93,19 @@ void C_turn() {
 		else
 		{
 			++c_aggro;
+			++v_aggro;
 		}
 		++sum1;
 	}
 	else { //시민이 못움직일떄
 		if (c_aggro == AGGRO_MIN) {
 			c_aggro = c_aggro;
+			v_aggro = v_aggro;
 			sum1 = 0;
 		}
 		else {
 			--c_aggro;
+			--v_aggro;
 			sum1 = 0;
 		}
 	}
@@ -128,8 +136,24 @@ void Z_turn() { //turn을 계산한것을 바탕으로 move에서 출력하기 때문에 프린트 X
 		}
 	}
 }
+
+void V_turn() {
+	int r_villian = rand() % 100;
+	if (r_villian <= 90)
+	{
+		baram = 1;
+		c_to_v = v;
+		v_to_c = c;
+	}
+	else
+	{
+		baram = 0;
+	}
+
+}
+
 void CZ_turn() {
-	C_turn();
+	CV_turn(); //빌런 추가됨
 	Z_turn();
 }
 
@@ -154,6 +178,46 @@ void character_position() {
 		printf("#");
 	}
 }
+
+void character_position_V() {
+	printf("#");
+	for (int i = 1; i < length - 1; i++) {
+		if (i == c) {
+			if (baram == 1)
+			{
+				printf("%c", characters[3]);
+			}
+			else
+			{
+				printf("%c", characters[0]);
+			}
+		}
+		else if (i == z) {
+			printf("%c", characters[1]);
+		}
+		else if (i == m) {
+			printf("%c", characters[2]);
+		}
+		else if (i == v) {
+			if (baram == 1)
+			{
+				printf("%c", characters[0]);
+			}
+			else
+			{
+				printf("%c", characters[3]);
+			}
+		}
+		else {
+			printf(" ");
+		}
+	}
+	printf("#\n");
+	for (int i = 0; i < length; i++) {
+		printf("#");
+	}
+}
+
 void train_start() {
 
 	for (int i = 0; i < length; i++) {
@@ -163,6 +227,17 @@ void train_start() {
 	character_position();
 	printf("\n\n");
 }
+
+void train_start_V() {
+
+	for (int i = 0; i < length; i++) {
+		printf("#");
+	}
+	printf("\n");
+	character_position_V();
+	printf("\n\n");
+}
+
 void game_over() {
 	if (c == 1)
 	{
@@ -213,6 +288,11 @@ void game_over_stage() {
 			printf("GAME OVER! madongseok dead...");
 			exit(1);
 		}
+	}
+	else if (c == 0)
+	{
+		printf("YOU WIN! citizen escapes train\n");
+		exit(1);
 	}
 }
 
@@ -270,6 +350,72 @@ void Z_move() {
 	printf("\n");
 }
 
+void CV_move() {
+	if (sum1 == 1 && c_aggro < AGGRO_MAX) {
+		if (baram == 1) //발암 == 1 > 시민 위치가 빌런위치 바뀜 c_to_v = v, v_to_c = c
+		{
+			printf("citizen : %d -> %d (aggro : %d -> %d)\n", c_to_v + 1, c_to_v, c_aggro - 1, c_aggro);
+		}
+		else
+		{
+			printf("citizen : %d -> %d (aggro : %d -> %d)\n", c + 1, c, c_aggro - 1, c_aggro);
+		}
+		if (stage == 4)
+		{
+			if (baram == 1)
+			{
+				printf("villian : %d -> %d (aggro : %d -> %d)\n", v_to_c + 1, v_to_c, v_aggro - 1, v_aggro);
+			}
+			else
+			{
+				printf("villian : %d -> %d (aggro : %d -> %d)\n", v + 1, v, v_aggro - 1, v_aggro);
+			}
+		}
+	}
+	else if (sum1 == 1 && c_aggro == AGGRO_MAX)
+	{
+		if (baram == 1)
+		{
+			printf("citizen : %d -> %d (aggro : %d)\n", c_to_v + 1, c_to_v, v_aggro);
+		}
+		else
+		{
+			printf("citizen : %d -> %d (aggro : %d)\n", c + 1, c, c_aggro);
+		}
+		if (stage == 4)
+		{
+			if (baram == 1)
+			{
+				printf("villian : %d -> %d (aggro : %d)\n", v_to_c + 1, v_to_c, v_aggro);
+			}
+			else
+			{
+				printf("villian : %d -> %d (aggro : %d)\n", v + 1, v, v_aggro);
+			}
+		}
+	}
+	else {
+		if (baram == 1)
+		{
+			printf("citizen stay %d (aggro : %d -> %d)\n", c_to_v, c_to_v + 1, v_aggro);
+		}
+		else
+		{
+			printf("citizen : stay %d (aggro : %d -> %d)\n", c, c_aggro + 1, c_aggro);
+		}
+		if (stage == 4)
+		{
+			if (baram == 1)
+			{
+				printf("villian : stay %d (aggro : %d -> %d)\n", v_to_c, v_to_c + 1, c_aggro);
+			}
+			else
+			{
+				printf("villian : stay %d (aggro : %d -> %d)\n", v, v_aggro + 1, v_aggro);
+			}
+		}
+	}
+}
 
 void CZ_move() { //프린트 부분
 	train_start();
@@ -277,6 +423,11 @@ void CZ_move() { //프린트 부분
 	Z_move();
 }
 
+void CZ_move_V() { //프린트 부분
+	train_start_V();
+	CV_move();
+	Z_move();
+}
 
 void m_move_Q() {
 	int a, b = 0;
@@ -305,41 +456,62 @@ void m_move_Q() {
 	} while (b != 1);
 }
 
+void M_move_LEFT() {
+	if (m_move == MOVE_LEFT)
+	{
+		--m;
+		y = 1;
+		if (stage == 4)
+		{
+			train_start_V();
+		}
+		else
+		{
+			train_start();
+		}
+		if (m_aggro == AGGRO_MAX) //AGGRO_MAX일때 움직이면 어그로 그대로
+		{
+			printf("madongseok move %d -> %d (aggro : %d, stamina : %d)\n", m + 1, m, m_aggro, m_stm);
+		}
+		else
+		{
+			++m_aggro;
+			printf("madongseok move %d -> %d (aggro : %d -> %d, stamina : %d)\n", m + 1, m, m_aggro - 1, m_aggro, m_stm);
+		}
+	}
+}
+
+void M_move_STAY() {
+	if (m_move == MOVE_STAY)
+	{
+		y = 1;
+		if (stage == 4)
+		{
+			train_start_V();
+		}
+		else
+		{
+			train_start();
+		}
+		if (m_aggro == AGGRO_MIN)
+		{
+			printf("madongseok stay %d (aggro : %d, stamina : %d)\n", m, m_aggro, m_stm);
+		}
+		else
+		{
+			--m_aggro;
+			printf("madongseok stay %d (aggro : %d -> %d, stamina : %d)\n", m, m_aggro + 1, m_aggro, m_stm);
+		}
+	}
+}
+
 void M_move() {
 	y = 0;
 	do
 	{
-
 		m_move_Q();
-		if (m_move == MOVE_LEFT)
-		{
-			--m;
-			y = 1;
-			train_start();
-			if (m_aggro == AGGRO_MAX) //AGGRO_MAX일때 움직이면 어그로 그대로
-			{
-				printf("madongseok move %d -> %d (aggro : %d, stamina : %d)\n", m + 1, m, m_aggro, m_stm);
-			}
-			else
-			{
-				++m_aggro;
-				printf("madongseok move %d -> %d (aggro : %d -> %d, stamina : %d)\n", m + 1, m, m_aggro - 1, m_aggro, m_stm);
-			}
-		}
-		else if (m_move == MOVE_STAY)
-		{
-			y = 1;
-			train_start();
-			if (m_aggro == AGGRO_MIN)
-			{
-				printf("madongseok stay %d (aggro : %d, stamina : %d)\n", m, m_aggro, m_stm);
-			}
-			else
-			{
-				--m_aggro;
-				printf("madongseok stay %d (aggro : %d -> %d, stamina : %d)\n", m, m_aggro + 1, m_aggro, m_stm);
-			}
-		}
+		M_move_LEFT();
+		M_move_STAY();
 	} while (!y);
 	printf("\n");
 }
@@ -530,6 +702,42 @@ void CZM_status() {
 	else {
 		printf("citizen deos nothing\n");
 	}
+	if (stage == 4)
+	{
+		if (c == 0)
+		{
+			game_over_stage;
+		}
+		if (baram == 1)
+		{
+			if (c_to_v == -1 || v_to_c == 0)
+			{
+				game_over();
+			}
+		}
+		else
+		{
+			if (v == 0 || c == 1)
+			{
+				game_over();
+			}
+		}
+		if (oneTime != 1)
+		{
+			if (baram == 1) //빌런 출력 부분
+			{
+				oneTime = 1;
+				printf("villian has switched location with the citizen\n");
+
+			}
+			else if (baram == 0)
+			{
+				printf("villian couldn't change locations with the citizen\n");
+			}
+		}
+
+	}
+
 	if (c == z - 1) {
 		game_over();
 	}
@@ -592,7 +800,6 @@ void CZM_status() {
 			game_over_stage();
 		}
 	}
-
 }
 
 
@@ -612,10 +819,11 @@ void reset() {
 	c = length - 6;
 	z = length - 3;
 	m = length - 2;
+	v = length - 5;
 	sum1 = 0;
-	turn = 0;
 	c_aggro = 1;
 	m_aggro = 1;
+	v_aggro = 1;
 }
 
 
@@ -649,8 +857,8 @@ int main() {
 		{
 			functionReset();
 			printf("\nturn : %d\n", turn);
-			CZ_turn(); //C_turn > Z_turn
-			CZ_move(); //train_start > C_move > Z_move	
+			CZ_turn(); //CZ_turn > Z_turn
+			CZ_move(); //train_start_V > C_move > Z_move	
 			m_pull = 0;
 			M_move();
 			CZM_status(); //m_action
@@ -663,7 +871,23 @@ int main() {
 			}
 		}
 	}
-	
+	//3-2 스테이지
+	printf("\n===============\n  3 - 2 STAGE\n===============\n\n");
+	printf("%d\n", stage);
+	reset();  //c,z,m,v, 어그로, turn 초기화
+	train_start_V();
+	while (stage == 4)
+	{
+		functionReset();
+		printf("\nturn : %d\n", turn);
+		printf("v_to_c : %d, c_to_v : %d\nv : %d, c : %d\n", v_to_c, c_to_v, v, c);
+		CZ_turn(); //CV_turn,Z_turn 
+		CZ_move_V(); //train_start_V > C_move > Z_move	
+		m_pull = 0;
+		V_turn();
+		M_move();
+		CZM_status(); //m_action
+	}
 	exit(1);
 	return 0;
 }
