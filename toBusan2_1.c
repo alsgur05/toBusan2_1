@@ -1,37 +1,3 @@
-//문제점 : Q. 열차 길이를 15로 했을때 안의 길이(C,Z,M이 움직이는 공간)를 15로 하는건가?
-/*
-Q. 깃헙 기록하고있는 방식이 이게 맞나
-A. 깃헙 서버에 남기 때문에(Blame) readme에 기록 안해도됨.
-*/
-/*
-Q. <이동> 페이즈 진행 순서가
-상태 출력 - 시민 이동 - 좀비 이동 - 상태 출력 - 마동석 이동(입력)]인데 내가 한게 맞나?
-*/
-/*
-Q. <이동>, <행동> 코드를 분리해서 만들라는 말인가?
-*/
-/*
-Q.마동석이 한턴에 move/stay 와 rest/provoke 를 다 하는데 둘다 0을 입력하면 한턴에 어그로를 2를 감소 시킬수있는건가?
-A.ㅇㅇ
-*/
-/*
-Q. ctrl + k + c 눌렀을때 기준으로 줄을 세는건가?
-A. 20줄 엄청 막 신경 안써도됨
-*/
-/*
-해야할거:
-좀비 마동석 공격 >> m_ation 부분 ZM 인접했을때 (0.rest 1.provoke. 2.pull) 뜨는 문구가 다름
->>
-
-현재 마동석 어그로가 AGGRO_MIN을 넘는 문제가 생김
-
-마동석 액션 부분에서 스테미나가 5인데 4 -> 5 라고 뜸
-좀비가 시민 옆에 있다고 해서 끝나는게 아니라 좀비가 공격(CZM_status)을 해야 끝나는거임
-
-madongseok rests.. 부분에서
-2 -> 3으로 증가한건데 증가하는 부분이 표시가 안됨
-*/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <Windows.h>
@@ -73,7 +39,7 @@ int sum1 = 0;
 int turn = 0;
 int c_aggro = 1, m_aggro = 1;
 int m_status, m_move;
-int c, z, m;
+int c, z, m, v;
 int status;
 int x;
 int m_action_while;
@@ -84,33 +50,26 @@ int ZM_cannotMove;
 int ZC_cannotMove;
 int m_pull;
 int gameOver = 0;
-
 int stage = 0;
 
-int first_length;
-int first_m_stm;
-int first_p;
 //초기화, 초기 상태
 void train_first() {
 	do
 	{
 		printf("train length(15 ~ 50) >> ");
 		scanf_s("%d", &length);
-		first_length = length;
 	} while (LEN_MAX < length || LEN_MIN > length);
 
 	do
 	{
 		printf("madongseok stamina(0 ~ 5) >> ");
 		scanf_s("%d", &m_stm);
-		first_m_stm = m_stm;
 	} while (STM_MAX < m_stm || STM_MIN > m_stm);
 
 	do
 	{
 		printf("percentile probability 'p' (10 ~ 90) >> ");
 		scanf_s("%d", &p);
-		first_p = p;
 	} while (PROB_MAX < p || PROB_MIN > p);
 	printf("\n");
 	c = length - 6;
@@ -146,7 +105,7 @@ void C_turn() {
 void Z_turn() { //turn을 계산한것을 바탕으로 move에서 출력하기 때문에 프린트 X
 	if (turn % 2 == 1) {
 		if (m == z + 1 && c_aggro <= m_aggro) {
-			++ZM_cannotMove; //초기화 시켜줘야됨 >> 해줌
+			++ZM_cannotMove;
 		}
 		else if (c == z - 1 && c_aggro > m_aggro) {
 			++ZC_cannotMove;
@@ -207,7 +166,7 @@ void train_start() {
 void game_over() {
 	if (c == 1)
 	{
-		printf("YOU WIN! citizen escapes train");
+		printf("YOU WIN! citizen escapes train\n");
 		++stage;
 		++gameOver;
 		return;
@@ -233,12 +192,14 @@ void game_over_stage() {
 	{
 		if (stage == 3)
 		{
-			printf("YOU WIN! citizen escape train");
 			game_over();
 		}
-		++stage;
-		printf("SUCCESS citizen escapes next train (stage : %d)", stage);
-		++gameOver;
+		else
+		{
+			++stage;
+			printf("SUCCESS citizen escapes next train (stage : %d)\n", stage);
+			gameOver = 1;
+		}
 	}
 	else if (c == z + 1)
 	{
@@ -422,9 +383,7 @@ void m_action_Q() {
 	} while (m_action_while == 0);
 }
 
-void m_action() { //어그로
-	m_action_Q();
-	printf("\n");
+void m_action_contact() {
 	if (m == z + 1) // 인접할 경우(m_stm 무조건 깎임 X --> 공격당할때만 깎임), m_action_Q 에서 status가 0,1,2인 경우 밖에 없음
 	{
 		if (status == ACTION_REST) //status == 0
@@ -496,7 +455,9 @@ void m_action() { //어그로
 			}
 		}
 	}
-	else //인접하지 않을경우 (pull 없음)
+}
+void m_action_notContact() {
+	if (m != z + 1)//인접하지 않을경우 (pull 없음)
 	{
 		if (status == ACTION_REST)
 		{
@@ -551,6 +512,14 @@ void m_action() { //어그로
 			}
 		}
 	}
+}
+
+void m_action() {
+	m_action_Q();
+	printf("\n");
+	m_action_contact();
+	m_action_notContact();
+
 }
 
 
@@ -614,16 +583,16 @@ void CZM_status() {
 	}
 	else
 	{
-		if (c != 1 )
+		if (c != 1)
 		{
 			m_action();
 		}
 		else
 		{
-
+			game_over_stage();
 		}
 	}
-	
+
 }
 
 
@@ -638,12 +607,15 @@ void functionReset() {
 }
 
 void reset() {
+	turn = 0;
+	gameOver = 0;
 	c = length - 6;
 	z = length - 3;
 	m = length - 2;
-	int sum1 = 0;
-	int turn = 0;
-	int c_aggro = 1, m_aggro = 1;
+	sum1 = 0;
+	turn = 0;
+	c_aggro = 1;
+	m_aggro = 1;
 }
 
 
@@ -664,14 +636,15 @@ int main() {
 	}
 
 	// 3 - 1 스테이지
+	printf("\n%d\n", stage);
 	printf("\n==========================\n  3 - 1 STAGE ( %d  / 3 )\n==========================\n\n", stage);
 
 	train_first(); //열차 길이, 마동석 stm, 확률 설정
 	while (stage != 4)
 	{
+		printf("새로운시작!\n");
 		reset();
 		train_start(); //열차 출력
-		gameOver = 0;
 		while (gameOver != 1)
 		{
 			functionReset();
@@ -683,7 +656,6 @@ int main() {
 			CZM_status(); //m_action
 			if (c == 1)
 			{
-				printf("SUCCESS! citizen escapes next train (stage : %d -> %d)\n", stage - 1, stage);
 				if (stage < 4)
 				{
 					printf("\n==========================\n  3 - 1 STAGE ( %d  / 3 )\n==========================\n\n", stage);
@@ -691,5 +663,7 @@ int main() {
 			}
 		}
 	}
+	
+	exit(1);
 	return 0;
 }
