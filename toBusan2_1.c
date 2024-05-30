@@ -52,7 +52,7 @@ int ZC_cannotMove;
 int m_pull;
 int gameOver = 0;
 int stage = 0;
-int baram, oneTime = 0;
+int baram, oneTime = 0, v_dead = 0;
 
 
 //초기화, 초기 상태
@@ -147,7 +147,14 @@ void V_turn() {
 	}
 	else
 	{
-		baram = 0;
+		if (baram == 1)
+		{
+			baram = 1;
+		}
+		else
+		{
+			baram = 0;
+		}
 	}
 
 }
@@ -203,9 +210,12 @@ void character_position_V() {
 			{
 				printf("%c", characters[0]);
 			}
-			else
+			else //baram == 0
 			{
-				printf("%c", characters[3]);
+				if (v_dead == 0) //v_dead == 1 일경우 출력 X
+				{
+					printf("%c", characters[3]);
+				}
 			}
 		}
 		else {
@@ -272,7 +282,7 @@ void game_over_stage() {
 		else
 		{
 			++stage;
-			printf("SUCCESS citizen escapes next train (stage : %d)\n", stage);
+			printf("SUCCESS ! citizen escapes next train (stage : %d)\n", stage);
 			gameOver = 1;
 		}
 	}
@@ -289,11 +299,38 @@ void game_over_stage() {
 			exit(1);
 		}
 	}
-	else if (c == 0)
+}
+void game_over_stage_V() {
+	if (c == 0)
 	{
-		printf("YOU WIN! citizen escapes train\n");
+		if (stage == 4)
+		{
+			printf("SUCCESS ! citizen escapes train");
+			exit(1);
+		}
+	}
+	else if (c == z + 1)
+	{
+		printf("GAME OVER! citizen dead...");
 		exit(1);
 	}
+	else if (z_atteck_m == 1)
+	{
+		if (m_stm == 1 || m_stm == 0)
+		{
+			printf("GAME OVER! madongseok dead...");
+			exit(1);
+		}
+	}
+	else if (baram == 1)
+	{
+		if (v == z + 1)
+		{
+			printf("GAME OVER! citizen dead...");
+			exit(1);
+		}
+	}
+
 }
 
 // 1턴 <이동> 페이즈 (시민-좀비-마동석)
@@ -704,7 +741,7 @@ void CZM_status() {
 	}
 	if (stage == 4)
 	{
-		if (c == 0)
+		/*if (c == 0)
 		{
 			game_over_stage;
 		}
@@ -721,7 +758,7 @@ void CZM_status() {
 			{
 				game_over();
 			}
-		}
+		}*/
 		if (oneTime != 1)
 		{
 			if (baram == 1) //빌런 출력 부분
@@ -733,6 +770,22 @@ void CZM_status() {
 			else if (baram == 0)
 			{
 				printf("villian couldn't change locations with the citizen\n");
+			}
+		}
+		if (baram == 0)
+		{
+			if (v == z + 1)
+			{
+				printf("zombie attecked villian\n");
+				v_dead = 1;
+			}
+		}
+		else //baram == 1 이므로 위치 : VC ( 보이는건 V가 앞이지만 변수는 v = 9 이면, c = 8 )
+		{ 
+			if (v == z + 1)
+			{
+				printf("zobie attecked citizen");
+				game_over_stage_V();
 			}
 		}
 
@@ -787,6 +840,17 @@ void CZM_status() {
 		else
 		{
 			game_over();
+		}
+	}
+	else if (stage == 4)
+	{
+		if (c != 0)
+		{
+			m_action();
+		}
+		else // c == 0
+		{
+			game_over_stage_V(); //이부분땜에 이상하게 끝남에휴
 		}
 	}
 	else
@@ -850,7 +914,6 @@ int main() {
 	train_first(); //열차 길이, 마동석 stm, 확률 설정
 	while (stage != 4)
 	{
-		printf("새로운시작!\n");
 		reset();
 		train_start(); //열차 출력
 		while (gameOver != 1)
@@ -873,14 +936,12 @@ int main() {
 	}
 	//3-2 스테이지
 	printf("\n===============\n  3 - 2 STAGE\n===============\n\n");
-	printf("%d\n", stage);
 	reset();  //c,z,m,v, 어그로, turn 초기화
 	train_start_V();
 	while (stage == 4)
 	{
 		functionReset();
 		printf("\nturn : %d\n", turn);
-		printf("v_to_c : %d, c_to_v : %d\nv : %d, c : %d\n", v_to_c, c_to_v, v, c);
 		CZ_turn(); //CV_turn,Z_turn 
 		CZ_move_V(); //train_start_V > C_move > Z_move	
 		m_pull = 0;
@@ -890,5 +951,5 @@ int main() {
 	}
 	exit(1);
 	return 0;
-	
+
 }
